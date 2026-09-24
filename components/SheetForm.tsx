@@ -60,7 +60,9 @@ export default function SheetForm({ userId, defaultAuthor, sheet }: { userId: st
         const ext = (file.name.split(".").pop() ?? "pdf").toLowerCase().replace(/[^a-z0-9]/g, "") || "pdf";
         const path = `${userId}/${crypto.randomUUID()}.${ext}`;
         const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
-        if (up.error) throw new Error("อัปโหลดไฟล์ไม่สำเร็จ: " + up.error.message);
+        if (up.error) throw new Error(/row-level security/i.test(up.error.message)
+          ? "อัปโหลดไฟล์เกินจำนวนต่อวันแล้ว (15 ไฟล์ / 24 ชม.) ลองใหม่พรุ่งนี้ หรือแปะเป็นลิงก์แทน"
+          : "อัปโหลดไฟล์ไม่สำเร็จ: " + up.error.message);
         row.file_path = path;
       }
 
@@ -69,7 +71,8 @@ export default function SheetForm({ userId, defaultAuthor, sheet }: { userId: st
         : await supabase.from("sheets").insert(row);
       if (res.error) {
         if (row.file_path && row.file_path !== oldPath) await supabase.storage.from(BUCKET).remove([row.file_path]);
-        throw new Error("บันทึกชีทไม่สำเร็จ: " + res.error.message);
+        const msg = res.error.message;
+        throw new Error(msg.includes("upload_limit:") ? msg.split("upload_limit:")[1].trim() : "บันทึกชีทไม่สำเร็จ: " + msg);
       }
       if (oldPath && oldPath !== row.file_path) await supabase.storage.from(BUCKET).remove([oldPath]);
 
@@ -162,7 +165,7 @@ export default function SheetForm({ userId, defaultAuthor, sheet }: { userId: st
       {!sheet && (
         <label className="check">
           <input type="checkbox" id="s-agree" name="agree" />
-          <span>ชีทนี้เป็นของฉันหรือได้รับอนุญาตให้แชร์ และไม่ใช่ข้อสอบที่ห้ามเผยแพร่</span>
+          <span>ชีทนี้เป็นของฉันหรือได้รับอนุญาตให้แชร์ ไม่ใช่ข้อสอบที่ห้ามเผยแพร่ และฉันยอมรับ <a href="/terms" target="_blank">กติกาการใช้งาน</a></span>
         </label>
       )}
 

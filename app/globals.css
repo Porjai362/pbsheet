@@ -339,3 +339,19 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
   .reader, .reader-embed { display: none !important; }
   body::after { content: "ชีทพิบูล — อ่านได้บนเว็บเท่านั้น"; display: block; padding: 40px; font-size: 20px; }
 }
+.read-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.like-big.liked { color: var(--pen); border-color: var(--pen); }
+.danger-zone { display: grid; gap: 12px; border-color: var(--pen); }
+.danger-zone h2 { font-size: 1.25rem; color: var(--pen); }
+.danger-zone .btn { justify-self: start; }
+.btn-danger-solid { background: var(--pen); color: #fff; border-color: var(--pen); }
+
+/* ---------- legal pages ---------- */
+.legal { max-width: 760px; gap: 28px; }
+.legal section { display: grid; gap: 10px; }
+.legal h2 { font-size: 1.3rem; }
+.legal ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.legal li, .legal p { max-width: 68ch; color: var(--ink-soft); }
+.legal strong { color: var(--ink); }
+.footer-links { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+.footer-links a { color: var(--muted); }

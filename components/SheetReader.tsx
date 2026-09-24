@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Kind = "pdf" | "image" | "link";
-type Status = { state: "loading"; done: number; total: number } | { state: "ready" } | { state: "error"; message: string };
+type Status = { state: "loading" } | { state: "ready"; total?: number } | { state: "error"; message: string };
 
 /**
  * แสดงชีทบนหน้าเว็บโดยไม่ให้ไฟล์ต้นฉบับ: วาด PDF/รูปลง <canvas> + ลายน้ำ + ปิดคลิกขวา/ลาก/Ctrl+S/Ctrl+P/พิมพ์
@@ -24,7 +24,7 @@ export default function SheetReader({
   watermark: string;
 }) {
   const pagesRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<Status>({ state: "loading", done: 0, total: 0 });
+  const [status, setStatus] = useState<Status>({ state: "loading" });
   const [zoom, setZoom] = useState(100);
 
   const watermarkBg = useMemo(() => {
@@ -52,6 +52,7 @@ export default function SheetReader({
     if (kind === "link") return;
     const box = pagesRef.current!;
     let cancelled = false;
+    let cleanupPdf: (() => void) | null = null;
 
     (async () => {
       const res = await fetch(`/api/sheets/${sheetId}/file`, { cache: "no-store" });
@@ -63,7 +64,7 @@ export default function SheetReader({
       if (kind === "image") {
         const bmp = await createImageBitmap(blob);
         const scale = Math.min(1, (width * dpr) / bmp.width) || 1;
-        const canvas = makePage(box, watermarkBg);
+        const { canvas } = makePage(box, watermarkBg);
         canvas.width = Math.round(bmp.width * scale);
         canvas.height = Math.round(bmp.height * scale);
         canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
@@ -75,27 +76,74 @@ export default function SheetReader({
       const pdfjs = await import("pdfjs-dist");
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       const doc = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
-      setStatus({ state: "loading", done: 0, total: doc.numPages });
+      if (cancelled) return void doc.destroy();
 
-      for (let i = 1; i <= doc.numPages && !cancelled; i++) {
-        const page = await doc.getPage(i);
-        const base = page.getViewport({ scale: 1 });
-        const viewport = page.getViewport({ scale: (width * dpr) / base.width });
-        const canvas = makePage(box, watermarkBg);
-        canvas.width = Math.floor(viewport.width);
-        canvas.height = Math.floor(viewport.height);
-        await page.render({ canvas, canvasContext: canvas.getContext("2d")!, viewport }).promise;
-        page.cleanup();
-        if (!cancelled) setStatus({ state: "loading", done: i, total: doc.numPages });
-      }
-      await doc.destroy();
-      if (!cancelled) setStatus({ state: "ready" });
+      // สร้างกรอบทุกหน้าไว้ก่อน (ใช้สัดส่วนหน้าแรก) แล้ววาดเฉพาะหน้าที่ใกล้จอ — หน้าไกลจะคืนหน่วยความจำ
+      const ratio = (await doc.getPage(1)).getViewport({ scale: 1 });
+      const pages = Array.from({ length: doc.numPages }, (_, i) => {
+        const { wrap, canvas } = makePage(box, watermarkBg);
+        wrap.style.aspectRatio = `${ratio.width} / ${ratio.height}`;
+        wrap.dataset.page = String(i + 1);
+        return { wrap, canvas, task: null as { cancel(): void } | null, drawn: false, gen: 0 };
+      });
+
+      const draw = async (n: number) => {
+        const pg = pages[n - 1];
+        if (pg.drawn) return;
+        pg.drawn = true;
+        const gen = pg.gen;
+        try {
+          const page = await doc.getPage(n);
+          if (gen !== pg.gen) return; // ถูก release ระหว่างรอ — ไม่ต้องวาด
+          const base = page.getViewport({ scale: 1 });
+          const viewport = page.getViewport({ scale: (width * dpr) / base.width });
+          pg.wrap.style.aspectRatio = `${base.width} / ${base.height}`;
+          pg.canvas.width = Math.floor(viewport.width);
+          pg.canvas.height = Math.floor(viewport.height);
+          const task = page.render({ canvas: pg.canvas, canvasContext: pg.canvas.getContext("2d")!, viewport });
+          pg.task = task;
+          await task.promise;
+          if (pg.task === task) pg.task = null;
+        } catch {
+          if (gen === pg.gen) {
+            pg.drawn = false; // วาดไม่สำเร็จ — ลองใหม่เมื่อกลับมาเห็น
+            pg.task = null;
+          }
+        }
+      };
+      const release = (n: number) => {
+        const pg = pages[n - 1];
+        if (!pg.drawn) return;
+        pg.gen++;
+        pg.task?.cancel();
+        pg.canvas.width = pg.canvas.height = 0;
+        pg.drawn = false;
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            const n = Number((e.target as HTMLElement).dataset.page);
+            if (e.isIntersecting) void draw(n);
+            else release(n);
+          }
+        },
+        { rootMargin: "1500px 0px" },
+      );
+      pages.forEach((pg) => observer.observe(pg.wrap));
+      cleanupPdf = () => {
+        observer.disconnect();
+        pages.forEach((pg) => pg.task?.cancel());
+        void doc.destroy();
+      };
+      setStatus({ state: "ready", total: doc.numPages });
     })().catch((e: unknown) => {
       if (!cancelled) setStatus({ state: "error", message: e instanceof Error ? e.message : "โหลดชีทไม่สำเร็จ" });
     });
 
     return () => {
       cancelled = true;
+      cleanupPdf?.();
       box.replaceChildren();
     };
   }, [sheetId, kind, watermarkBg]);
@@ -125,8 +173,8 @@ export default function SheetReader({
     <div className="reader" onContextMenu={block} onDragStart={block} onCopy={block}>
       <div className="reader-bar">
         <span className="muted">
-          {status.state === "loading" && (status.total ? `กำลังโหลดหน้า ${status.done}/${status.total}…` : "กำลังโหลดชีท…")}
-          {status.state === "ready" && "อ่านได้บนเว็บนี้เท่านั้น · ห้ามเผยแพร่ต่อ"}
+          {status.state === "loading" && "กำลังโหลดชีท…"}
+          {status.state === "ready" && `${status.total ? `${status.total} หน้า · ` : ""}อ่านได้บนเว็บนี้เท่านั้น · ห้ามเผยแพร่ต่อ`}
         </span>
         <div className="zoom" role="group" aria-label="ซูม">
           <button className="icon-btn" onClick={() => setZoom((z) => Math.max(50, z - 25))} aria-label="ซูมออก">−</button>
@@ -142,14 +190,15 @@ export default function SheetReader({
   );
 }
 
-function makePage(box: HTMLElement, watermarkBg: string) {
+function makePage(box: HTMLElement, watermarkBg: string): { wrap: HTMLDivElement; canvas: HTMLCanvasElement } {
   const wrap = document.createElement("div");
   wrap.className = "reader-page";
   const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 0; // ยังไม่วาด = ไม่กินหน่วยความจำ
   const mark = document.createElement("div");
   mark.className = "reader-mark";
   mark.style.backgroundImage = watermarkBg;
   wrap.append(canvas, mark);
   box.append(wrap);
-  return canvas;
+  return { wrap, canvas };
 }

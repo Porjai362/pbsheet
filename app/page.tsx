@@ -5,8 +5,8 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Sheet } from "@/lib/types";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
-  const { denied } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ denied?: string; deleted?: string }> }) {
+  const { denied, deleted } = await searchParams;
   const supabase = await createClient();
   const viewer = await getViewer();
 
@@ -18,6 +18,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
 
   return (
     <>
+      {deleted && <p className="notice" style={{ marginTop: 16 }}>ลบบัญชีและข้อมูลทั้งหมดของคุณเรียบร้อยแล้ว ขอบคุณที่เคยร่วมแบ่งปันนะ</p>}
       {denied && <p className="notice error" style={{ marginTop: 16 }}>หน้านั้นสำหรับแอดมินเท่านั้น</p>}
       <section className="hero">
         <div className="hero-copy">

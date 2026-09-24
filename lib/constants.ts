@@ -17,3 +17,7 @@ export const ACCEPTED_TYPES = ["application/pdf", "image/png", "image/jpeg", "im
 
 export const NEXT_EXAM_DATE = process.env.NEXT_PUBLIC_NEXT_EXAM_DATE ?? "";
 export const NEXT_EXAM_LABEL = process.env.NEXT_PUBLIC_NEXT_EXAM_LABEL ?? "วันสอบ";
+
+// ช่องทางติดต่อผู้ดูแลเว็บ (เช่น IG/เพจ/อีเมล) — แสดงในหน้านโยบายและกติกา
+export const SITE_CONTACT = process.env.NEXT_PUBLIC_CONTACT ?? "";
+export const POLICY_UPDATED = "24 กันยายน 2569";

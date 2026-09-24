@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Caveat, IBM_Plex_Sans_Thai, Mitr } from "next/font/google";
 import Header from "@/components/Header";
 import SetupNotice from "@/components/SetupNotice";
@@ -22,6 +23,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main id="top">{isSupabaseConfigured ? children : <SetupNotice />}</main>
         <footer className="footer">
           <p>ชีทพิบูล — ทำโดยนักเรียน เพื่อนักเรียนพิบูลวิทยาลัย · ไม่ใช่เว็บไซต์ทางการของโรงเรียน</p>
+          <nav className="footer-links" aria-label="ข้อมูลเว็บไซต์">
+            <Link href="/terms">กติกาการใช้งาน</Link>
+            <Link href="/privacy">นโยบายความเป็นส่วนตัว</Link>
+          </nav>
         </footer>
       </body>
     </html>

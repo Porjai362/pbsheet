@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import GoogleButton from "@/components/GoogleButton";
 import { getViewer } from "@/lib/auth";
@@ -20,7 +21,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </p>
       {error && <p className="notice error">เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง</p>}
       <GoogleButton next={dest} />
-      <p className="muted" style={{ fontSize: ".85rem" }}>เราใช้แค่ชื่อและรูปโปรไฟล์ Google ของคุณเพื่อแสดงในเว็บ</p>
+      <p className="muted" style={{ fontSize: ".85rem" }}>
+        การเข้าสู่ระบบถือว่าคุณยอมรับ <Link href="/terms">กติกาการใช้งาน</Link> และ{" "}
+        <Link href="/privacy">นโยบายความเป็นส่วนตัว</Link> · เราใช้แค่อีเมล ชื่อ และรูปโปรไฟล์ Google ของคุณ
+      </p>
     </section>
   );
 }

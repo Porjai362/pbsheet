@@ -137,10 +137,26 @@ create policy "users insert own sheets" on public.sheets for insert to authentic
   with check (owner_id = auth.uid() and is_active_user());
 drop policy if exists "owner or admin update" on public.sheets;
 create policy "owner or admin update" on public.sheets for update to authenticated
-  using (owner_id = auth.uid() or is_admin()) with check (owner_id = auth.uid() or is_admin());
+  using ((owner_id = auth.uid() and is_active_user()) or is_admin())
+  with check ((owner_id = auth.uid() and is_active_user()) or is_admin());
 drop policy if exists "owner or admin delete" on public.sheets;
 create policy "owner or admin delete" on public.sheets for delete to authenticated
-  using (owner_id = auth.uid() or is_admin());
+  using ((owner_id = auth.uid() and is_active_user()) or is_admin());
+
+-- จำกัดการแบ่งปัน: สูงสุด 10 ชีทต่อ 24 ชั่วโมงต่อคน (แอดมินไม่จำกัด)
+create or replace function public.limit_sheet_uploads()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null or is_admin() then return new; end if;
+  if (select count(*) from sheets where owner_id = auth.uid() and created_at > now() - interval '24 hours') >= 10 then
+    raise exception 'upload_limit: แบ่งปันได้สูงสุด 10 ชีทต่อวัน พรุ่งนี้ค่อยมาแบ่งปันต่อนะ';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists sheets_limit on public.sheets;
+create trigger sheets_limit before insert on public.sheets
+  for each row execute function public.limit_sheet_uploads();
 
 -- ยอดเปิดอ่าน (ใครก็เพิ่มได้ทีละ 1)
 create or replace function public.bump_open(sheet_id uuid)
@@ -219,9 +235,21 @@ values ('sheets', 'sheets', false, 20971520, array['application/pdf', 'image/png
 on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+create or replace function public.recent_upload_count()
+returns bigint language sql stable security definer set search_path = public, storage as $$
+  select count(*) from storage.objects
+  where bucket_id = 'sheets' and (storage.foldername(name))[1] = auth.uid()::text
+    and created_at > now() - interval '24 hours';
+$$;
+
 drop policy if exists "sheets upload own folder" on storage.objects;
 create policy "sheets upload own folder" on storage.objects for insert to authenticated
-  with check (bucket_id = 'sheets' and (storage.foldername(name))[1] = auth.uid()::text and public.is_active_user());
+  with check (
+    bucket_id = 'sheets'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.is_active_user()
+    and public.recent_upload_count() < 15
+  );
 -- select จำเป็นสำหรับการลบไฟล์ (storage.remove) — ให้เฉพาะเจ้าของโฟลเดอร์และแอดมิน
 drop policy if exists "sheets select own or admin" on storage.objects;
 create policy "sheets select own or admin" on storage.objects for select to authenticated

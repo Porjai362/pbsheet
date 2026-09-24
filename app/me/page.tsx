@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { deleteSheet, updateDisplayName } from "@/app/actions";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
+import DeleteAccount from "@/components/DeleteAccount";
 import SubmitButton from "@/components/SubmitButton";
 import { requireUser } from "@/lib/auth";
 import { EXAM_LABEL } from "@/lib/constants";
@@ -83,6 +84,8 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
           </table>
         </div>
       )}
+
+      <DeleteAccount sheetCount={sheets.length} />
     </div>
   );
 }
