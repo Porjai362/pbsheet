@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { EXAM_LABEL, TINT } from "@/lib/constants";
-import { sheetKind, sheetUrl, timeAgo } from "@/lib/format";
+import { readHref, sheetKind, timeAgo } from "@/lib/format";
 import type { Sheet } from "@/lib/types";
 
 export default function SheetCard({
@@ -9,17 +10,14 @@ export default function SheetCard({
   now,
   liked,
   onLike,
-  onOpen,
   onReport,
 }: {
   sheet: Sheet;
   now: number;
   liked: boolean;
   onLike: () => void;
-  onOpen: () => void;
   onReport: () => void;
 }) {
-  const url = sheetUrl(s);
   const isNew = now - new Date(s.created_at).getTime() < 3 * 86400e3;
 
   return (
@@ -40,13 +38,7 @@ export default function SheetCard({
           {timeAgo(s.created_at)} · เปิดอ่าน {s.open_count} ครั้ง
         </p>
         <div className="card-foot">
-          {url ? (
-            <a className="btn btn-ink" href={url} target="_blank" rel="noopener noreferrer" onClick={onOpen}>
-              {s.link_url ? "เปิดชีท ↗" : "อ่าน / ดาวน์โหลด"}
-            </a>
-          ) : (
-            <span className="btn btn-ink" aria-disabled="true">ไม่มีไฟล์</span>
-          )}
+          <Link className="btn btn-ink" href={readHref(s.id)}>อ่านชีท</Link>
           <button className={`icon-btn${liked ? " liked" : ""}`} aria-pressed={liked} aria-label="ให้หัวใจชีทนี้" onClick={onLike}>
             ♥ <span>{s.like_count}</span>
           </button>

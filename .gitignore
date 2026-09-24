@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# สร้างอัตโนมัติจาก pdfjs-dist (scripts/copy-pdf-worker.mjs)
+/public/pdf.worker.min.mjs

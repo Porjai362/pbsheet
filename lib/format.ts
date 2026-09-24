@@ -1,4 +1,3 @@
-import { BUCKET, SUPABASE_URL } from "@/lib/supabase/env";
 import type { Sheet } from "@/lib/types";
 
 export function timeAgo(iso: string) {
@@ -19,10 +18,31 @@ export function safeUrl(u: string | null | undefined) {
   }
 }
 
-export function sheetUrl(s: Pick<Sheet, "link_url" | "file_path">) {
-  if (s.link_url) return safeUrl(s.link_url);
-  if (!s.file_path) return null;
-  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${s.file_path.split("/").map(encodeURIComponent).join("/")}`;
+/** หน้าอ่านชีทของเว็บ (ทุกชีทเปิดอ่านผ่านหน้านี้ ไม่ลิงก์ไปไฟล์ตรง) */
+export function readHref(id: string) {
+  return `/read/${id}`;
+}
+
+/** แปลงลิงก์ Google Drive / Docs / Canva เป็นแบบฝังในหน้าเว็บได้ (null = ฝังไม่ได้ ต้องเปิดที่เว็บต้นทาง) */
+export function embedUrl(link: string | null | undefined) {
+  const href = safeUrl(link);
+  if (!href) return null;
+  const u = new URL(href);
+  const host = u.hostname.replace(/^www\./, "");
+
+  if (host === "drive.google.com") {
+    const id = u.pathname.match(/\/file\/d\/([\w-]+)/)?.[1] ?? u.searchParams.get("id");
+    return id ? `https://drive.google.com/file/d/${id}/preview` : null;
+  }
+  if (host === "docs.google.com") {
+    const m = u.pathname.match(/^\/(document|presentation|spreadsheets)\/d\/([\w-]+)/);
+    return m ? `https://docs.google.com/${m[1]}/d/${m[2]}/preview` : null;
+  }
+  if (host === "canva.com") {
+    const m = u.pathname.match(/^\/design\/([\w-]+)(?:\/([\w-]+))?/);
+    return m ? `https://www.canva.com/design/${m[1]}${m[2] ? "/" + m[2] : ""}/view?embed` : null;
+  }
+  return null;
 }
 
 export function sheetKind(s: Pick<Sheet, "link_url" | "file_path">) {

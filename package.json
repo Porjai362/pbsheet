@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/copy-pdf-worker.mjs",
+    "predev": "node scripts/copy-pdf-worker.mjs",
+    "prebuild": "node scripts/copy-pdf-worker.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -12,6 +15,7 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.109.0",
     "next": "16.3.6",
+    "pdfjs-dist": "^5.4.624",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1"

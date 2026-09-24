@@ -90,11 +90,6 @@ export default function SheetBrowser({
     }
   }
 
-  function opened(s: Sheet) {
-    patch(s.id, (x) => ({ ...x, open_count: x.open_count + 1 }));
-    void supabase.rpc("bump_open", { sheet_id: s.id });
-  }
-
   function report(s: Sheet) {
     if (!viewerId) return router.push("/login?next=/%23browse");
     setReporting(s);
@@ -163,7 +158,6 @@ export default function SheetBrowser({
               now={now}
               liked={liked.has(s.id)}
               onLike={() => toggleLike(s)}
-              onOpen={() => opened(s)}
               onReport={() => report(s)}
             />
           ))}

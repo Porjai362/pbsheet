@@ -310,3 +310,32 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
 .inline-form .field { flex: 1 1 240px; }
 .setup { max-width: 680px; margin: 48px auto; display: grid; gap: 14px; }
 .setup ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+
+/* ---------- read page ---------- */
+.read-page { gap: 20px; }
+.read-head { display: grid; gap: 6px; max-width: 760px; }
+.read-head h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+.read-desc { color: var(--ink-soft); }
+.back-link { color: var(--muted); text-decoration: none; font-weight: 500; justify-self: start; }
+.back-link:hover { color: var(--ink); }
+.reader { display: grid; gap: 12px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.reader-bar {
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 68px); z-index: 5;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: .9rem;
+}
+.zoom { display: flex; align-items: center; gap: 6px; }
+.zoom .icon-btn { padding: 4px 12px; font-size: 1.1rem; }
+.zoom-val { min-width: 3.5em; text-align: center; font-variant-numeric: tabular-nums; }
+.reader-scroll { overflow-x: auto; }
+.reader-pages { display: grid; gap: 16px; margin-inline: auto; max-width: none; min-width: 0; transition: width .15s ease; }
+.reader-page { position: relative; background: #fff; border-radius: 6px; box-shadow: var(--shadow); overflow: hidden; }
+.reader-page canvas { display: block; width: 100%; height: auto; pointer-events: none; }
+.reader-mark { position: absolute; inset: 0; pointer-events: none; background-repeat: repeat; }
+.reader-embed { position: relative; border: 1.5px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.reader-embed iframe { display: block; width: 100%; height: min(85vh, 1100px); border: 0; }
+
+@media print {
+  .reader, .reader-embed { display: none !important; }
+  body::after { content: "ชีทพิบูล — อ่านได้บนเว็บเท่านั้น"; display: block; padding: 40px; font-size: 20px; }
+}

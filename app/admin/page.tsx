@@ -5,7 +5,7 @@ import ConfirmSubmit from "@/components/ConfirmSubmit";
 import SubmitButton from "@/components/SubmitButton";
 import { requireAdmin } from "@/lib/auth";
 import { EXAM_LABEL } from "@/lib/constants";
-import { sheetUrl, timeAgo } from "@/lib/format";
+import { readHref, timeAgo } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { AdminUser, Report, Sheet } from "@/lib/types";
 
@@ -63,10 +63,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 }
 
 function SheetTitle({ s }: { s: Sheet }) {
-  const url = sheetUrl(s);
   return (
     <>
-      <div className="cell-title">{url ? <a href={url} target="_blank" rel="noopener noreferrer">{s.title}</a> : s.title}</div>
+      <div className="cell-title"><Link href={readHref(s.id)}>{s.title}</Link></div>
       <div className="cell-sub">ม.{s.grade} · {s.subject} · เทอม {s.term} {EXAM_LABEL[s.exam]} · โดย {s.author_name} · {timeAgo(s.created_at)}</div>
     </>
   );

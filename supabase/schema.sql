@@ -23,6 +23,11 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (select 1 from profiles where id = auth.uid() and not banned);
 $$;
 
+-- ล้างระบบจำกัดอีเมลโรงเรียน (ถ้าเคยรัน schema เวอร์ชันนั้นไว้)
+drop trigger if exists enforce_school_email on auth.users;
+drop function if exists public.enforce_school_email();
+drop function if exists public.is_school_email(text);
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
@@ -204,17 +209,23 @@ drop policy if exists "admin deletes reports" on public.reports;
 create policy "admin deletes reports" on public.reports for delete to authenticated using (is_admin());
 
 -- =========================================================
--- storage: ไฟล์ชีท (อ่านได้ทุกคน / อัปโหลดลงโฟลเดอร์ของตัวเองเท่านั้น)
+-- storage: ไฟล์ชีท — bucket แบบ PRIVATE
+-- ไม่มีใครดาวน์โหลดตรงจาก Supabase ได้ ผู้อ่านเห็นไฟล์ผ่านหน้า /read ของเว็บเท่านั้น
+-- (server ดึงไฟล์ด้วย service role ใน app/api/sheets/[id]/file/route.ts)
 -- path: <user id>/<uuid>.<ext>
 -- =========================================================
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('sheets', 'sheets', true, 20971520, array['application/pdf', 'image/png', 'image/jpeg', 'image/webp'])
-on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit,
+values ('sheets', 'sheets', false, 20971520, array['application/pdf', 'image/png', 'image/jpeg', 'image/webp'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "sheets upload own folder" on storage.objects;
 create policy "sheets upload own folder" on storage.objects for insert to authenticated
   with check (bucket_id = 'sheets' and (storage.foldername(name))[1] = auth.uid()::text and public.is_active_user());
+-- select จำเป็นสำหรับการลบไฟล์ (storage.remove) — ให้เฉพาะเจ้าของโฟลเดอร์และแอดมิน
+drop policy if exists "sheets select own or admin" on storage.objects;
+create policy "sheets select own or admin" on storage.objects for select to authenticated
+  using (bucket_id = 'sheets' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin()));
 drop policy if exists "sheets delete own or admin" on storage.objects;
 create policy "sheets delete own or admin" on storage.objects for delete to authenticated
   using (bucket_id = 'sheets' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin()));

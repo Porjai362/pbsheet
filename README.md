@@ -7,13 +7,23 @@ Next.js 16 (App Router) · Supabase (Postgres + Auth + Storage) · Login ด้�
 
 | ทำอะไรได้ | ไม่ได้ login | user | admin |
 |---|:-:|:-:|:-:|
-| ดู / ค้นหา / เปิดอ่านชีท | ✓ | ✓ | ✓ |
+| ดู / ค้นหา / อ่านชีทบนหน้าเว็บ | ✓ | ✓ | ✓ |
 | แบ่งปันชีท (อัปโหลดไฟล์ / แปะลิงก์) | | ✓ | ✓ |
 | แก้ไข / ลบชีทของตัวเอง | | ✓ | ✓ |
 | กดหัวใจ · แจ้งปัญหา | | ✓ | ✓ |
 | ซ่อน / แก้ / ลบชีทของทุกคน | | | ✓ |
 | ดูและปิดรายงานปัญหา | | | ✓ |
 | ตั้ง/ถอดสิทธิ์แอดมิน · ระงับผู้ใช้ | | | ✓ |
+
+## กันดาวน์โหลดไฟล์
+- กด "อ่านชีท" → หน้า `/read/[id]` ของเว็บเอง ไม่มีลิงก์ไปไฟล์ใน Supabase
+- bucket `sheets` เป็น **private** — ดึงไฟล์จาก Supabase ตรง ๆ ไม่ได้ ไฟล์ส่งผ่าน `/api/sheets/[id]/file` เท่านั้น
+  ซึ่งตรวจสิทธิ์ด้วย RLS ก่อน และรับเฉพาะ request จากหน้าเว็บเราเอง (พิมพ์ URL ตรงในเบราว์เซอร์จะถูกปฏิเสธ)
+- PDF/รูป ถูกวาดลง `<canvas>` ด้วย pdf.js (ไม่มีปุ่มดาวน์โหลดของ PDF viewer) พร้อมลายน้ำอีเมลผู้อ่าน
+- ปิดคลิกขวา ลากรูป คัดลอก Ctrl+S / Ctrl+P และการพิมพ์
+- ชีทแบบลิงก์ Google Drive/Docs/Canva ฝังแบบ preview ในหน้าเว็บ (ปิดปุ่มดาวน์โหลดได้ที่ Drive: แชร์ → ⚙ → ไม่ติ๊ก "ผู้มีสิทธิ์ดูสามารถดาวน์โหลด")
+
+> ข้อจำกัด: ไม่มีเว็บไหนกันได้ 100% — คนที่ตั้งใจจริงยังแคปหน้าจอหรือใช้ DevTools ได้ ระบบนี้กันการโหลดแบบทั่วไปและทำให้ต้นทางสืบย้อนได้จากลายน้ำ
 
 สิทธิ์ถูกบังคับใช้ 3 ชั้น: `proxy.ts` (ต้อง login) → ตรวจ role ในหน้า/Server Action → **Row Level Security ในฐานข้อมูล** (ชั้นที่สำคัญที่สุด ต่อให้มีคนยิง API ตรงก็ข้ามไม่ได้)
 
@@ -22,7 +32,7 @@ Next.js 16 (App Router) · Supabase (Postgres + Auth + Storage) · Login ด้�
 ### 1. Supabase
 1. สร้างโปรเจกต์ที่ https://supabase.com
 2. **SQL Editor** → วางเนื้อหา `supabase/schema.sql` ทั้งไฟล์ → Run
-3. **Project Settings → API** → คัดลอก Project URL และ `anon` public key
+3. **Project Settings → API** → คัดลอก Project URL, `anon` public key และ `service_role` key (เก็บเป็นความลับ ใช้เฉพาะฝั่ง server)
 
 ### 2. Google Login
 1. ไปที่ https://console.cloud.google.com → สร้างโปรเจกต์ → **APIs & Services → OAuth consent screen** (External) กรอกชื่อแอป "ชีทพิบูล"
@@ -50,7 +60,7 @@ where id = (select id from auth.users where email = 'your-email@gmail.com');
 
 ## Deploy (Vercel)
 1. push โค้ดขึ้น GitHub → Import ใน https://vercel.com
-2. ใส่ Environment Variables ตาม `.env.example`
+2. ใส่ Environment Variables ตาม `.env.example` (รวม `SUPABASE_SERVICE_ROLE_KEY` — ถ้าไม่ใส่ หน้าอ่านชีทจะโหลดไฟล์ไม่ได้)
 3. เพิ่ม `https://<โดเมน>.vercel.app/auth/callback` ใน Supabase Redirect URLs และตั้ง Site URL เป็นโดเมนนี้
 
 ## โครงสร้าง
@@ -60,6 +70,8 @@ app/
   login/              หน้า login (Google)
   auth/callback/      รับ code จาก Google → สร้าง session
   auth/signout/       ออกจากระบบ
+  read/[id]/          หน้าอ่านชีท (canvas + ลายน้ำ)
+  api/sheets/[id]/file/  ส่งไฟล์จาก bucket private ให้หน้า read เท่านั้น
   share/              แบ่งปัน / แก้ไขชีท (?edit=<id>)
   me/                 ชีทของฉัน + ชื่อที่แสดง
   admin/              แผงควบคุม: รายงาน · ชีททั้งหมด · ผู้ใช้
