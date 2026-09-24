@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ALLOWED_EMAIL_DOMAIN } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 
 export default function GoogleButton({ next }: { next: string }) {
@@ -16,7 +15,7 @@ export default function GoogleButton({ next }: { next: string }) {
       provider: "google",
       options: {
         redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        queryParams: { prompt: "select_account", hd: ALLOWED_EMAIL_DOMAIN },
+        queryParams: { prompt: "select_account" },
       },
     });
     if (error) {

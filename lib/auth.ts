@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { isSchoolEmail } from "@/lib/constants";
 import type { Profile } from "@/lib/types";
 
 /** ผู้ใช้ที่ login อยู่ + profile (null ถ้ายังไม่ login) — cache ต่อ 1 request */
@@ -13,7 +12,7 @@ export const getViewer = cache(async (): Promise<{ id: string; email: string | n
   if (!isSupabaseConfigured) return null;
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  if (!data.user || !isSchoolEmail(data.user.email)) return null;
+  if (!data.user) return null;
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, display_name, avatar_url, role, banned")

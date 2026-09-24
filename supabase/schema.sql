@@ -13,43 +13,14 @@ create table if not exists public.profiles (
   created_at   timestamptz not null default now()
 );
 
--- =========================================================
--- ใช้ได้เฉพาะอีเมลโรงเรียน — แก้โดเมนที่นี่ที่เดียว (ต้องตรงกับ ALLOWED_EMAIL_DOMAIN ใน lib/constants.ts)
--- =========================================================
-create or replace function public.is_school_email(email text)
-returns boolean language sql immutable as $$
-  select coalesce(lower(email) like '%@pibul.ac.th', false);
-$$;
-
--- กันสมัครด้วยอีเมลอื่นตั้งแต่ต้นทาง (Supabase จะยกเลิกการสร้างบัญชี)
-create or replace function public.enforce_school_email()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  if not is_school_email(new.email) then
-    raise exception 'school_email_only: ใช้ได้เฉพาะอีเมล @pibul.ac.th';
-  end if;
-  return new;
-end $$;
-
-drop trigger if exists enforce_school_email on auth.users;
-create trigger enforce_school_email before insert or update of email on auth.users
-  for each row execute function public.enforce_school_email();
-
--- บัญชีเก่าที่ไม่ใช่อีเมลโรงเรียน จะไม่มีสิทธิ์อะไรเลย (ทั้ง user และ admin)
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1 from profiles p join auth.users u on u.id = p.id
-    where p.id = auth.uid() and p.role = 'admin' and not p.banned and is_school_email(u.email)
-  );
+  select exists (select 1 from profiles where id = auth.uid() and role = 'admin' and not banned);
 $$;
 
 create or replace function public.is_active_user()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1 from profiles p join auth.users u on u.id = p.id
-    where p.id = auth.uid() and not p.banned and is_school_email(u.email)
-  );
+  select exists (select 1 from profiles where id = auth.uid() and not banned);
 $$;
 
 create or replace function public.handle_new_user()
@@ -251,5 +222,5 @@ create policy "sheets delete own or admin" on storage.objects for delete to auth
 -- =========================================================
 -- ตั้งแอดมินคนแรก (แก้อีเมลแล้วรันหลังจาก login ด้วย Google ครั้งแรก)
 -- update public.profiles set role = 'admin'
---   where id = (select id from auth.users where email = 'your-name@pibul.ac.th');
+--   where id = (select id from auth.users where email = 'your-email@gmail.com');
 -- =========================================================
