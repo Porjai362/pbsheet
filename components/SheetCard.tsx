@@ -7,12 +7,14 @@ import type { Sheet } from "@/lib/types";
 
 export default function SheetCard({
   sheet: s,
+  index = 0,
   now,
   liked,
   onLike,
   onReport,
 }: {
   sheet: Sheet;
+  index?: number;
   now: number;
   liked: boolean;
   onLike: () => void;
@@ -21,7 +23,7 @@ export default function SheetCard({
   const isNew = now - new Date(s.created_at).getTime() < 3 * 86400e3;
 
   return (
-    <article className="card">
+    <article className="card" style={{ "--i": Math.min(index, 11) } as React.CSSProperties}>
       <div className="cover" style={{ "--tint": TINT[s.subject] ?? TINT["อื่น ๆ"] } as React.CSSProperties}>
         <p className="cover-subj">{s.subject}</p>
         <div className="cover-meta">
@@ -40,7 +42,7 @@ export default function SheetCard({
         <div className="card-foot">
           <Link className="btn btn-ink" href={readHref(s.id)}>อ่านชีท</Link>
           <button className={`icon-btn${liked ? " liked" : ""}`} aria-pressed={liked} aria-label="ให้หัวใจชีทนี้" onClick={onLike}>
-            ♥ <span>{s.like_count}</span>
+            <span className="heart" aria-hidden="true">♥</span> <span>{s.like_count}</span>
           </button>
         </div>
         <button className="card-report" onClick={onReport}>แจ้งปัญหา</button>

@@ -134,12 +134,6 @@ mark {
 /* browse */
 .browse { padding-block: 24px 56px; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-.grade-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.grade-tabs button {
-  font: 500 1rem var(--font-display); padding: 8px 20px; border-radius: 999px; cursor: pointer;
-  background: var(--surface); color: var(--ink); border: 1.5px solid var(--line);
-}
-.grade-tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
 .field { display: grid; gap: 6px; font-size: .9rem; font-weight: 500; color: var(--ink-soft); }
 .field.grow { flex: 1 1 260px; }
@@ -247,10 +241,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--i
   font-weight: 500; box-shadow: var(--shadow); max-width: calc(100vw - 32px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  * { transition: none !important; }
-}
 
 /* ---------- Next.js additions ---------- */
 .page { padding-block: 32px 64px; display: grid; gap: 24px; }

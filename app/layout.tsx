@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import SetupNotice from "@/components/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import "./globals.css";
+import "./motion.css";
 
 const mitr = Mitr({ subsets: ["thai", "latin"], weight: ["400", "500", "600"], variable: "--font-mitr" });
 const plex = IBM_Plex_Sans_Thai({ subsets: ["thai", "latin"], weight: ["400", "500", "600"], variable: "--font-plex" });

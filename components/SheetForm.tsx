@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ACCEPTED_TYPES, MAX_FILE_MB, SUBJECT_NAMES } from "@/lib/constants";
+import Select from "@/components/Select";
+import { ACCEPTED_TYPES, MAX_FILE_MB, SUBJECTS } from "@/lib/constants";
 import { safeUrl } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { BUCKET } from "@/lib/supabase/env";
@@ -93,33 +94,17 @@ export default function SheetForm({ userId, defaultAuthor, sheet }: { userId: st
       </label>
 
       <div className="row3">
-        <label className="field">
-          <span>ชั้น *</span>
-          <select id="s-grade" name="grade" defaultValue={sheet?.grade ?? 4}>
-            <option value="4">ม.4</option><option value="5">ม.5</option><option value="6">ม.6</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>เทอม *</span>
-          <select id="s-term" name="term" defaultValue={sheet?.term ?? 1}>
-            <option value="1">เทอม 1</option><option value="2">เทอม 2</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>สอบ *</span>
-          <select id="s-exam" name="exam" defaultValue={sheet?.exam ?? "midterm"}>
-            <option value="midterm">กลางภาค</option><option value="final">ปลายภาค</option><option value="other">อื่น ๆ</option>
-          </select>
-        </label>
+        <Select id="s-grade" name="grade" label="ชั้น *" defaultValue={String(sheet?.grade ?? 4)}
+          options={[{ value: "4", label: "ม.4" }, { value: "5", label: "ม.5" }, { value: "6", label: "ม.6" }]} />
+        <Select id="s-term" name="term" label="เทอม *" defaultValue={String(sheet?.term ?? 1)}
+          options={[{ value: "1", label: "เทอม 1" }, { value: "2", label: "เทอม 2" }]} />
+        <Select id="s-exam" name="exam" label="สอบ *" defaultValue={sheet?.exam ?? "midterm"}
+          options={[{ value: "midterm", label: "กลางภาค" }, { value: "final", label: "ปลายภาค" }, { value: "other", label: "อื่น ๆ" }]} />
       </div>
 
       <div className="row2">
-        <label className="field">
-          <span>วิชา *</span>
-          <select id="s-subject" name="subject" defaultValue={sheet?.subject ?? SUBJECT_NAMES[0]}>
-            {SUBJECT_NAMES.map((n) => <option key={n}>{n}</option>)}
-          </select>
-        </label>
+        <Select id="s-subject" name="subject" label="วิชา *" defaultValue={sheet?.subject ?? SUBJECTS[0][0]}
+          options={SUBJECTS.map(([n, c]) => ({ value: n, label: n, color: c }))} />
         <label className="field">
           <span>ชื่อที่แสดง / นามแฝง *</span>
           <input id="s-author" name="author_name" required maxLength={40} defaultValue={sheet?.author_name ?? defaultAuthor} />

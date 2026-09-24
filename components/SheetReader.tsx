@@ -68,6 +68,7 @@ export default function SheetReader({
         canvas.width = Math.round(bmp.width * scale);
         canvas.height = Math.round(bmp.height * scale);
         canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        canvas.parentElement?.classList.add("is-drawn");
         bmp.close();
         if (!cancelled) setStatus({ state: "ready" });
         return;
@@ -104,6 +105,7 @@ export default function SheetReader({
           pg.task = task;
           await task.promise;
           if (pg.task === task) pg.task = null;
+          if (gen === pg.gen) pg.wrap.classList.add("is-drawn");
         } catch {
           if (gen === pg.gen) {
             pg.drawn = false; // วาดไม่สำเร็จ — ลองใหม่เมื่อกลับมาเห็น
@@ -117,6 +119,7 @@ export default function SheetReader({
         pg.gen++;
         pg.task?.cancel();
         pg.canvas.width = pg.canvas.height = 0;
+        pg.wrap.classList.remove("is-drawn");
         pg.drawn = false;
       };
 

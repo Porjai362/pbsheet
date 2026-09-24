@@ -4,11 +4,14 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReportDialog from "@/components/ReportDialog";
 import SheetCard from "@/components/SheetCard";
-import { SUBJECT_NAMES } from "@/lib/constants";
+import Select from "@/components/Select";
+import { SUBJECTS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import type { Sheet } from "@/lib/types";
 
 type Sort = "new" | "likes" | "opens";
+
+const GRADES = [["all", "ทุกชั้น"], ["4", "ม.4"], ["5", "ม.5"], ["6", "ม.6"]] as const;
 
 export default function SheetBrowser({
   sheets: initial,
@@ -103,8 +106,9 @@ export default function SheetBrowser({
         <p className="muted">พบ {visible.length} ชีท</p>
       </div>
 
-      <div className="grade-tabs" role="tablist" aria-label="เลือกชั้น">
-        {[["all", "ทุกชั้น"], ["4", "ม.4"], ["5", "ม.5"], ["6", "ม.6"]].map(([g, label]) => (
+      <div className="grade-tabs" role="tablist" aria-label="เลือกชั้น" style={{ "--active": GRADES.findIndex(([g]) => g === grade) } as React.CSSProperties}>
+        <span className="grade-indicator" aria-hidden="true" />
+        {GRADES.map(([g, label]) => (
           <button key={g} role="tab" aria-selected={grade === g} onClick={() => setGrade(g)}>
             {label}
           </button>
@@ -112,49 +116,30 @@ export default function SheetBrowser({
       </div>
 
       <div className="filters">
-        <label className="field grow">
+        <label className="field grow search-field">
           <span className="sr-only">ค้นหา</span>
+          <svg className="search-icon" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path d="M13.2 13.2L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
           <input id="f-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อชีท บทเรียน หรือคนสรุป…" />
         </label>
-        <label className="field">
-          <span className="sr-only">วิชา</span>
-          <select id="f-subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
-            <option value="">ทุกวิชา</option>
-            {SUBJECT_NAMES.map((n) => <option key={n}>{n}</option>)}
-          </select>
-        </label>
-        <label className="field">
-          <span className="sr-only">เทอม</span>
-          <select id="f-term" value={term} onChange={(e) => setTerm(e.target.value)}>
-            <option value="">ทุกเทอม</option>
-            <option value="1">เทอม 1</option>
-            <option value="2">เทอม 2</option>
-          </select>
-        </label>
-        <label className="field">
-          <span className="sr-only">การสอบ</span>
-          <select id="f-exam" value={exam} onChange={(e) => setExam(e.target.value)}>
-            <option value="">ทุกการสอบ</option>
-            <option value="midterm">กลางภาค</option>
-            <option value="final">ปลายภาค</option>
-            <option value="other">อื่น ๆ</option>
-          </select>
-        </label>
-        <label className="field">
-          <span className="sr-only">เรียงตาม</span>
-          <select id="f-sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-            <option value="new">ใหม่ล่าสุด</option>
-            <option value="likes">หัวใจเยอะสุด</option>
-            <option value="opens">เปิดอ่านเยอะสุด</option>
-          </select>
-        </label>
+        <Select id="f-subject" label="วิชา" hideLabel value={subject} onChange={setSubject} className="select-wide"
+          options={[{ value: "", label: "ทุกวิชา" }, ...SUBJECTS.map(([n, c]) => ({ value: n, label: n, color: c }))]} />
+        <Select id="f-term" label="เทอม" hideLabel value={term} onChange={setTerm}
+          options={[{ value: "", label: "ทุกเทอม" }, { value: "1", label: "เทอม 1" }, { value: "2", label: "เทอม 2" }]} />
+        <Select id="f-exam" label="การสอบ" hideLabel value={exam} onChange={setExam}
+          options={[{ value: "", label: "ทุกการสอบ" }, { value: "midterm", label: "กลางภาค" }, { value: "final", label: "ปลายภาค" }, { value: "other", label: "อื่น ๆ" }]} />
+        <Select id="f-sort" label="เรียงตาม" hideLabel value={sort} onChange={(v) => setSort(v as Sort)}
+          options={[{ value: "new", label: "ใหม่ล่าสุด", hint: "เรียง" }, { value: "likes", label: "หัวใจเยอะสุด", hint: "เรียง" }, { value: "opens", label: "เปิดอ่านเยอะสุด", hint: "เรียง" }]} />
       </div>
 
       {visible.length > 0 ? (
-        <div className="sheet-grid" aria-live="polite">
-          {visible.map((s) => (
+        <div className="sheet-grid" aria-live="polite" key={[grade, subject, term, exam, sort].join("|")}>
+          {visible.map((s, i) => (
             <SheetCard
               key={s.id}
+              index={i}
               sheet={s}
               now={now}
               liked={liked.has(s.id)}
@@ -164,7 +149,7 @@ export default function SheetBrowser({
           ))}
         </div>
       ) : (
-        <div className="empty">
+        <div className="empty fade-up">
           <p>{sheets.length ? "ยังไม่มีชีทตรงกับที่เลือก" : "ยังไม่มีชีทในเว็บเลย"}</p>
           <a className="btn btn-hl" href="/share">เป็นคนแรกที่แบ่งปัน</a>
         </div>
