@@ -15,6 +15,8 @@ Next.js 16 (App Router) · Supabase (Postgres + Auth + Storage) · Login ด้�
 | ดูและปิดรายงานปัญหา | | | ✓ |
 | ตั้ง/ถอดสิทธิ์แอดมิน · ระงับผู้ใช้ | | | ✓ |
 
+**Login ได้เฉพาะอีเมล @pibul.ac.th** — บัญชีอื่นสมัครไม่ได้ (trigger ใน DB) และบัญชีเก่าที่ไม่ใช่อีเมลโรงเรียนจะไม่มีสิทธิ์ใด ๆ
+
 สิทธิ์ถูกบังคับใช้ 3 ชั้น: `proxy.ts` (ต้อง login) → ตรวจ role ในหน้า/Server Action → **Row Level Security ในฐานข้อมูล** (ชั้นที่สำคัญที่สุด ต่อให้มีคนยิง API ตรงก็ข้ามไม่ได้)
 
 ## ตั้งค่าครั้งแรก
@@ -44,7 +46,7 @@ npm run dev
 Login ด้วย Google 1 ครั้ง แล้วรันใน SQL Editor (แก้อีเมล):
 ```sql
 update public.profiles set role = 'admin'
-where id = (select id from auth.users where email = 'your-email@gmail.com');
+where id = (select id from auth.users where email = 'your-name@pibul.ac.th');
 ```
 หลังจากนั้นแอดมินตั้งคนอื่นเป็นแอดมินได้จากหน้า `/admin → ผู้ใช้`
 
@@ -74,4 +76,4 @@ proxy.ts              รีเฟรช session + กันหน้าที�
 ## ปรับแต่ง
 - รายชื่อวิชา / สีปก: `lib/constants.ts`
 - วันสอบที่นับถอยหลัง: `NEXT_PUBLIC_NEXT_EXAM_DATE`, `NEXT_PUBLIC_NEXT_EXAM_LABEL`
-- จำกัดให้ login ได้เฉพาะอีเมลโรงเรียน: เพิ่มเงื่อนไขใน `handle_new_user()` ของ `schema.sql` (เช่น `if new.email not like '%@pibul.ac.th' then raise exception ...`)
+- โดเมนอีเมลที่อนุญาต (ตอนนี้ `@pibul.ac.th`): แก้ 2 ที่ให้ตรงกัน — `is_school_email()` ใน `supabase/schema.sql` และ `ALLOWED_EMAIL_DOMAIN` ใน `lib/constants.ts`

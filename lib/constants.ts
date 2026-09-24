@@ -17,3 +17,9 @@ export const ACCEPTED_TYPES = ["application/pdf", "image/png", "image/jpeg", "im
 
 export const NEXT_EXAM_DATE = process.env.NEXT_PUBLIC_NEXT_EXAM_DATE ?? "";
 export const NEXT_EXAM_LABEL = process.env.NEXT_PUBLIC_NEXT_EXAM_LABEL ?? "วันสอบ";
+
+// ใช้ได้เฉพาะอีเมลโรงเรียน — ต้องตรงกับ is_school_email() ใน supabase/schema.sql
+export const ALLOWED_EMAIL_DOMAIN = "pibul.ac.th";
+export function isSchoolEmail(email: string | null | undefined) {
+  return Boolean(email && email.toLowerCase().endsWith("@" + ALLOWED_EMAIL_DOMAIN));
+}
